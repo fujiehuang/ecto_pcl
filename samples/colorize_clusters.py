@@ -18,17 +18,22 @@ This example shows how to extract points corresponding to objects on a table,
 
 import ecto
 from ecto.opts import run_plasm, scheduler_options
-from ecto_openni import Capture
+#from ecto_openni import Capture
 from ecto_pcl import *
+import ecto_ros.ecto_sensor_msgs as ecto_sensor_msgs
+import ecto_pcl, ecto_pcl_ros, ecto_ros, sys
 
 # capture from kinect and downsample
-device = Capture('device')
-cloud_generator = NiConverter('cloud_generator')
+#device = Capture('device')
+#cloud_generator = NiConverter('cloud_generator')
+
+cloud_sub = ecto_sensor_msgs.Subscriber_PointCloud2("cloud_sub", topic_name='/camera/depth/color/points')
+msg2cloud = ecto_pcl_ros.Message2PointCloud("msg2cloud", format=ecto_pcl.XYZRGB)
+
 voxel_grid = VoxelGrid("voxel_grid", leaf_size=0.05)
 
-graph = [device[:] >> cloud_generator[:],
-         cloud_generator[:] >> voxel_grid[:]
-         ]
+#graph = [device[:] >> cloud_generator[:], cloud_generator[:] >> voxel_grid[:]]
+graph =[cloud_sub[:] >> msg2cloud[:], msg2cloud[:] >> voxel_grid[:]]
 
 # estimate normals, segment and find convex hull
 normals = NormalEstimation("normals", k_search=0, radius_search=0.2)
@@ -56,14 +61,20 @@ colorize = ColorizeClusters("colorize")
 merge = MergeClouds("merge")
 viewer = CloudViewer("viewer", window_name="Clouds!")
 
-graph += [cloud_generator[:] >> extract_stuff["input"],
+graph += [#cloud_generator[:] >> extract_stuff["input"],
+          msg2cloud[:] >> extract_stuff["input"],
+
           convex_hull[:] >> extract_stuff["planar_hull"],
           extract_stuff[:] >> extract_indices["indices"],
-          cloud_generator[:] >> extract_indices["input"],
+          #cloud_generator[:] >> extract_indices["input"],
+          msg2cloud[:] >> extract_indices["input"],
+
           extract_indices[:] >> extract_clusters['input'],
           extract_clusters[:] >> colorize["clusters"],
           extract_indices[:] >> colorize["input"],
-          cloud_generator[:] >> merge["input"],
+          #cloud_generator[:] >> merge["input"],
+          msg2cloud[:] >> merge["input"],
+          
           colorize[:] >> merge["input2"],
           colorize[:] >> viewer[:]
           ]
@@ -73,4 +84,5 @@ plasm.connect(graph)
 
 if __name__ == "__main__":
     from ecto.opts import doit
+    ecto_ros.init(sys.argv, "ecto_table")
     doit(plasm, description='Execute tabletop segmentation and colorize clusters.')

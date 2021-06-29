@@ -31,7 +31,7 @@ class EctoPlasm():
         nan_filter = PassThrough("nan_removal")
         colorize = ColorizeClusters("colorize", max_clusters=100)
 
-        cloud_sub = ecto_sensor_msgs.Subscriber_PointCloud2("cloud_sub", topic_name='/camera/depth_registered/points')
+        cloud_sub = ecto_sensor_msgs.Subscriber_PointCloud2("cloud_sub", topic_name='/camera/depth/color/points')
         msg2cloud = ecto_pcl_ros.Message2PointCloud("msg2cloud", format=ecto_pcl.XYZRGB)
 
         cloud2msg = ecto_pcl_ros.PointCloud2Message("cloud2msg")
@@ -53,4 +53,4 @@ if __name__ == "__main__":
     try:
         ecto_plasm = EctoPlasm()
     except KeyboardInterrupt:
-        print "Shutting down Ecto demo."
+        print("Shutting down Ecto demo.")
